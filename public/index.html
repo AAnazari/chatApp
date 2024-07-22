@@ -13,25 +13,26 @@
 <body>
     <ul id="messages"></ul>
     <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Send</button>
+        <input id="input" autocomplete="off" placeholder="Type your message here..." /><button>Send</button>
     </form>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        const username = prompt("Enter your username");
 
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
             if (input.value) {
-                socket.emit('chat message', input.value);
+                socket.emit('chat message', { user: username, msg: input.value });
                 input.value = '';
             }
         });
 
-        socket.on('chat message', (msg) => {
+        socket.on('chat message', (data) => {
             const item = document.createElement('li');
-            item.textContent = msg;
+            item.textContent = `${data.user}: ${data.msg}`;
             document.getElementById('messages').appendChild(item);
             window.scrollTo(0, document.body.scrollHeight);
         });
