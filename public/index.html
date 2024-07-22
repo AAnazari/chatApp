@@ -24,8 +24,14 @@
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
-            if (input.value) {
-                socket.emit('chat message', { user: username, msg: input.value });
+            const message = input.value;
+            if (message) {
+                const recipient = prompt("Enter the recipient's username (leave blank for public message)");
+                if (recipient) {
+                    socket.emit('private message', { to: recipient, msg: message, from: username });
+                } else {
+                    socket.emit('chat message', { user: username, msg: message });
+                }
                 input.value = '';
             }
         });
@@ -33,6 +39,13 @@
         socket.on('chat message', (data) => {
             const item = document.createElement('li');
             item.textContent = `${data.user}: ${data.msg}`;
+            document.getElementById('messages').appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        socket.on('private message', (data) => {
+            const item = document.createElement('li');
+            item.textContent = `Private from ${data.from}: ${data.msg}`;
             document.getElementById('messages').appendChild(item);
             window.scrollTo(0, document.body.scrollHeight);
         });
