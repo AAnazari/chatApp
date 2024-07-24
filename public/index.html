@@ -1,55 +1,138 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Chat App</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        ul { list-style-type: none; padding: 0; }
-        li { padding: 8px; margin-bottom: 10px; background: #f3f3f3; border-radius: 4px; }
-        input { padding: 8px; width: 80%; }
-        button { padding: 8px; }
-    </style>
-</head>
-<body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-        <input id="input" autocomplete="off" placeholder="Type your message here..." /><button>Send</button>
-    </form>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const username = prompt("Enter your username");
-        socket.emit('register', username);
-
-        document.getElementById('form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = document.getElementById('input');
-            const message = input.value;
-            if (message) {
-                const recipient = prompt("Enter the recipient's username (leave blank for public message)");
-                if (recipient) {
-                    socket.emit('private message', { to: recipient, msg: message, from: username });
-                } else {
-                    socket.emit('chat message', { user: username, msg: message });
-                }
-                input.value = '';
+    <head>
+        <title>Chat App</title>
+        <style>
+            body { font-family: Arial, sans-serif; position: relative; min-height: 100vh;}
+            /*
+			ul { list-style-type: none; padding: 0; }
+            li { padding: 8px; margin-bottom: 10px; background: #f3f3f3; border-radius: 4px; }
+            input { padding: 8px; width: 80%; }
+            button { padding: 8px; }
+			*/
+			.chat-box { 
+                width: 300px; 
+                height: 450px; 
+                border: 1px solid #ccc; 
+                position: fixed; 
+                bottom: 10px; 
+                right: 10px; 
+                background: white; 
+                z-index: 1000; 
+                display: flex; 
+                flex-direction: column; 
             }
-        });
+            .chat-container { 
+                flex: 1; 
+                overflow-y: scroll; 
+                padding: 10px;
+            }
+            .chat-input { 
+                padding: 10px; 
+                border-top: 1px solid #ccc; 
+                width: calc(100% - 22px); /* Adjust width to account for padding and border */
+            }
+            .show-chat-button {
+                display: block;
+                margin: 20px auto;
+                padding: 10px 20px;
+                cursor: pointer;
+            }
+            .main-content {
+                padding: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 
+		<ul id="messages"></ul>
+        <form id="form" action="">
+            <input id="input" autocomplete="off" placeholder="Type your message here..." /><button>Send</button>
+        </form>
+        -->
+		<div class="main-content">
+            <button class="show-chat-button" id="show-chat-button">Open Chat</button>
+            <!-- Your main page content goes here -->
 
-        socket.on('chat message', (data) => {
-            const item = document.createElement('li');
-            item.textContent = `${data.user}: ${data.msg}`;
-            document.getElementById('messages').appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
-        });
+            <p>
+                Main page content here...
+            </p>
+        </div>
+        <div class="chat-box" id="chat-box" style="display: none;">
+            <div class="chat-container" id="chat-container"></div>
+            <input id="chat-input" class="chat-input" type="text" placeholder="Type a message...">
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+            const username = prompt("Enter your username");
+            socket.emit('register', username);
 
-        socket.on('private message', (data) => {
-            const item = document.createElement('li');
-            item.textContent = `Private from ${data.from}: ${data.msg}`;
-            document.getElementById('messages').appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
-        });
-    </script>
-</body>
+			/*
+            document.getElementById('form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = document.getElementById('input');
+                const message = input.value;
+				if (message) {
+                    const recipient = prompt("Enter the recipient's username (leave blank for public message)");
+                    if (recipient) {
+                        socket.emit('private message', { to: recipient, msg: message, from: username });
+                    } else {
+                        socket.emit('chat message', { user: username, msg: message });
+                    }
+                    input.value = '';
+                }
+            });
+			*/
+			const showChatButton = document.getElementById('show-chat-button');
+            const chatBox = document.getElementById('chat-box');
+            const chatContainer = document.getElementById('chat-container');
+            const chatInput = document.getElementById('chat-input');
+			
+			showChatButton.addEventListener('click', () => {
+                if (chatBox.style.display === 'none' || chatBox.style.display === '') {
+                    chatBox.style.display = 'flex';
+                } else {
+                    chatBox.style.display = 'none';
+                }
+            });
+
+			chatInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+					const message = chatInput.value;
+					if (message) {
+						const recipient = prompt("Enter the recipient's username (leave blank for public message)");
+						if (recipient) {
+							socket.emit('private message', { to: recipient, msg: message, from: username });
+						} else {
+							socket.emit('chat message', { user: username, msg: message });
+						}
+						chatInput.value = '';
+					}
+                }
+            });
+            
+			/*
+            socket.on('chat message', (data) => {
+                const item = document.createElement('li');
+                item.textContent = `${data.user}: ${data.msg}`;
+                document.getElementById('messages').appendChild(item);
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+			*/
+			socket.on('chat message', (data) => {
+                const msgElem = document.createElement('div');
+                msgElem.textContent = `${data.user}: ${data.msg}`;
+                chatContainer.appendChild(msgElem);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            });
+
+            socket.on('private message', (data) => {
+                const item = document.createElement('div');
+                item.textContent = `Private from ${data.from}: ${data.msg}`;
+                chatContainer.appendChild(item);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            });
+        </script>
+    </body>
 </html>
